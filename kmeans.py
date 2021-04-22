@@ -3,6 +3,7 @@ from pyspark.sql import functions as F, SparkSession
 from pyspark.sql import types as spark_types
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
+from matplotlib import pyplot as plt
 
 
 def simulate_kmeans(startk=2, endk=6):
@@ -57,6 +58,22 @@ def simulate_kmeans(startk=2, endk=6):
 		cosine_silhouette_scores[k] = silhouette
 
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
+
+	plt.clf()
+	plt.plot(euclidean_silhouette_scores.keys(), euclidean_silhouette_scores.values())
+	plt.title("euclidean_silhouette_scores")
+	plt.legend(['silhouette'], loc='best')
+	plt.xlabel("Number of clusters")
+	plt.ylabel("Silhouette score")
+	plt.savefig("euclidean_silhouette_scores.png")
+
+	plt.clf()
+	plt.plot(cosine_silhouette_scores.keys(), cosine_silhouette_scores.values())
+	plt.title("cosine_silhouette_scores")
+	plt.legend(['silhouette'], loc='best')
+	plt.xlabel("Number of clusters")
+	plt.ylabel("Silhouette score")
+	plt.savefig("cosine_silhouette_scores.png")
 
 
 if __name__ == '__main__':
