@@ -5,6 +5,7 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
 from matplotlib import pyplot as plt
 import argparse
+from utils import calculate_sse
 
 
 def simulate_kmeans(dataset_path, startk=2, endk=6):
@@ -23,6 +24,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	dataset = assembler.transform(dataset)
 
 	euclidean_silhouette_scores = {}
+	euclidean_sse_scores = {}
 	for k in range(startk, endk + 1):
 		kmeans = KMeans().setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
@@ -32,16 +34,25 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 
 		# Make predictions
 		predictions = model.transform(dataset)
+		predictions.persist()
 
 		# Evaluate clustering by computing Silhouette score
 		evaluator = ClusteringEvaluator().setDistanceMeasure('squaredEuclidean')
-
 		silhouette = evaluator.evaluate(predictions)
 		euclidean_silhouette_scores[k] = silhouette
 
+		# Evaluate clustering by computing SSE
+		cluster_centers = model.clusterCenters()
+		spark.sparkContext.broadcast(cluster_centers)
+		sse = calculate_sse(predictions, cluster_centers)
+		predictions.unpersist()
+		euclidean_sse_scores[k] = sse
+
 	print('euclidean_silhouette_scores: ', euclidean_silhouette_scores)
+	print('euclidean_sse_scores: ', euclidean_sse_scores)
 
 	cosine_silhouette_scores = {}
+	cosine_sse_scores = {}
 	for k in range(startk, endk + 1):
 		kmeans = KMeans().setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
@@ -51,30 +62,41 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 
 		# Make predictions
 		predictions = model.transform(dataset)
+		predictions.persist()
 
 		# Evaluate clustering by computing Silhouette score
-		evaluator = ClusteringEvaluator().setDistanceMeasure('cosine')
-
+		evaluator = ClusteringEvaluator().setDistanceMeasure('squaredEuclidean')
 		silhouette = evaluator.evaluate(predictions)
 		cosine_silhouette_scores[k] = silhouette
 
+		# Evaluate clustering by computing SSE
+		cluster_centers = model.clusterCenters()
+		spark.sparkContext.broadcast(cluster_centers)
+		sse = calculate_sse(predictions, cluster_centers)
+		predictions.unpersist()
+		cosine_sse_scores[k] = sse
+
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
+	print('cosine_sse_scores: ', cosine_sse_scores)
 
 	plt.clf()
 	plt.plot(euclidean_silhouette_scores.keys(), euclidean_silhouette_scores.values())
-	plt.title("euclidean_silhouette_scores")
-	plt.legend(['silhouette'], loc='best')
+	plt.plot(cosine_silhouette_scores.keys(), cosine_silhouette_scores.values())
+	plt.title("Optimal number of clusters based on Silhouette")
+	plt.legend(['silhouette_euclidean', 'silhouette_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Silhouette score")
-	plt.savefig("euclidean_silhouette_scores.png")
+	plt.savefig("kmeans_silhouette_scores.png")
+
 
 	plt.clf()
-	plt.plot(cosine_silhouette_scores.keys(), cosine_silhouette_scores.values())
-	plt.title("cosine_silhouette_scores")
-	plt.legend(['silhouette'], loc='best')
+	plt.plot(euclidean_sse_scores.keys(), euclidean_sse_scores.values())
+	plt.plot(cosine_sse_scores.keys(), cosine_sse_scores.values())
+	plt.title("Optimal number of clusters based on SSE")
+	plt.legend(['sse_euclidean, sse_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
-	plt.ylabel("Silhouette score")
-	plt.savefig("cosine_silhouette_scores.png")
+	plt.ylabel("SSE")
+	plt.savefig("kmeans_SSE.png")
 
 
 if __name__ == '__main__':
