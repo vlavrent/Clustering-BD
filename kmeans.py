@@ -4,14 +4,15 @@ from pyspark.sql import types as spark_types
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
 from matplotlib import pyplot as plt
+import argparse
 
 
-def simulate_kmeans(startk=2, endk=6):
+def simulate_kmeans(dataset_path, startk=2, endk=6):
 	spark = SparkSession.builder.master("local[*]"). \
 		appName("kmeans"). \
 		getOrCreate()
 
-	dataset = spark.read.csv("Datasets/Data1.csv", header=True) \
+	dataset = spark.read.csv(dataset_path, header=True) \
 		.select(F.col("0").cast(spark_types.FloatType()),
 				F.col("1").cast(spark_types.FloatType()))
 
@@ -77,4 +78,24 @@ def simulate_kmeans(startk=2, endk=6):
 
 
 if __name__ == '__main__':
-	simulate_kmeans()
+	parser = argparse.ArgumentParser()
+	parser.add_argument(
+		"--dataset_path",
+		"-d",
+		help="path of the dataset",
+		default="Datasets/Data1.csv"
+	)
+	parser.add_argument(
+		"--startk",
+		"-s",
+		help="start value of k for fine tuning",
+		default=2
+	)
+	parser.add_argument(
+		"--endk",
+		"-e",
+		help="end value of k for fine tuning",
+		default=6
+	)
+	args = parser.parse_args()
+	simulate_kmeans(dataset_path=args.dataset_path, startk=int(args.startk), endk=int(args.endk))
