@@ -93,7 +93,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	plt.plot(euclidean_sse_scores.keys(), euclidean_sse_scores.values())
 	plt.plot(cosine_sse_scores.keys(), cosine_sse_scores.values())
 	plt.title("Optimal number of clusters based on SSE")
-	plt.legend(['sse_euclidean, sse_cosine'], loc='best')
+	plt.legend(['sse_euclidean', 'sse_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("SSE")
 	plt.savefig("kmeans_SSE.png")
