@@ -6,7 +6,7 @@ from pyspark.ml.evaluation import ClusteringEvaluator
 from matplotlib import pyplot as plt
 import argparse
 from utils import calculate_sse
-
+import time
 
 def simulate_kmeans(dataset_path, startk=2, endk=6):
 	spark = SparkSession.builder.master("local[*]"). \
@@ -25,7 +25,9 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 
 	euclidean_silhouette_scores = {}
 	euclidean_sse_scores = {}
+	euclidean_times = {}
 	for k in range(startk, endk + 1):
+		start = time.time()
 		kmeans = BisectingKMeans().setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
 			.setPredictionCol("prediction") \
@@ -48,12 +50,17 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 		predictions.unpersist()
 		euclidean_sse_scores[k] = sse
 
+		end = time.time()
+		euclidean_times[k] = end - start
 	print('euclidean_silhouette_scores: ', euclidean_silhouette_scores)
 	print('euclidean_sse_scores: ', euclidean_sse_scores)
+	print('euclidean_times: ', euclidean_times)
 
 	cosine_silhouette_scores = {}
 	cosine_sse_scores = {}
+	cosine_times = {}
 	for k in range(startk, endk + 1):
+		start = time.time()
 		kmeans = BisectingKMeans().setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
 			.setPredictionCol("prediction") \
@@ -76,8 +83,12 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 		predictions.unpersist()
 		cosine_sse_scores[k] = sse
 
+		end = time.time()
+		cosine_times[k] = end - start
+
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
 	print('cosine_sse_scores: ', cosine_sse_scores)
+	print('cosine_times: ', cosine_times)
 
 	plt.clf()
 	plt.plot(euclidean_silhouette_scores.keys(), euclidean_silhouette_scores.values())
@@ -97,6 +108,15 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	plt.xlabel("Number of clusters")
 	plt.ylabel("SSE")
 	plt.savefig("b_kmeans_SSE.png")
+
+	plt.clf()
+	plt.plot(euclidean_times.keys(), euclidean_times.values())
+	plt.plot(cosine_times.keys(), cosine_times.values())
+	plt.title("Time fluctuation")
+	plt.legend(['euclidean_times', 'cosine_times'], loc='best')
+	plt.xlabel("Number of clusters")
+	plt.ylabel("Time(ms)")
+	plt.savefig("b_kmeans_times.png")
 
 
 if __name__ == '__main__':
