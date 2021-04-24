@@ -1,14 +1,15 @@
 from pyspark.ml.feature import VectorAssembler
 from pyspark.sql import functions as F, SparkSession
 from pyspark.sql import types as spark_types
-from pyspark.ml.clustering import BisectingKMeans
+from pyspark.ml.clustering import KMeans, BisectingKMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
 from matplotlib import pyplot as plt
 import argparse
 from utils import calculate_sse
 import time
 
-def simulate_kmeans(dataset_path, startk=2, endk=6):
+
+def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	spark = SparkSession.builder.master("local[*]"). \
 		appName("kmeans"). \
 		getOrCreate()
@@ -28,11 +29,17 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	euclidean_times = {}
 	for k in range(startk, endk + 1):
 		start = time.time()
-		kmeans = BisectingKMeans().setK(k).setSeed(13) \
+
+		if algorithm == 'kmeans':
+			algo = KMeans()
+		elif algorithm == 'bkmeans':
+			algo = BisectingKMeans()
+
+		algo.setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
 			.setPredictionCol("prediction") \
 			.setDistanceMeasure('euclidean')
-		model = kmeans.fit(dataset)
+		model = algo.fit(dataset)
 
 		# Make predictions
 		predictions = model.transform(dataset)
@@ -46,6 +53,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 		# Evaluate clustering by computing SSE
 		cluster_centers = model.clusterCenters()
 		spark.sparkContext.broadcast(cluster_centers)
+		# sse = model.summary.trainingCost
 		sse = calculate_sse(predictions, cluster_centers)
 		predictions.unpersist()
 		euclidean_sse_scores[k] = sse
@@ -61,11 +69,17 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	cosine_times = {}
 	for k in range(startk, endk + 1):
 		start = time.time()
-		kmeans = BisectingKMeans().setK(k).setSeed(13) \
+
+		if algorithm == 'kmeans':
+			algo = KMeans()
+		elif algorithm == 'bkmeans':
+			algo = BisectingKMeans()
+
+		algo.setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
 			.setPredictionCol("prediction") \
 			.setDistanceMeasure('cosine')
-		model = kmeans.fit(dataset)
+		model = algo.fit(dataset)
 
 		# Make predictions
 		predictions = model.transform(dataset)
@@ -79,6 +93,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 		# Evaluate clustering by computing SSE
 		cluster_centers = model.clusterCenters()
 		spark.sparkContext.broadcast(cluster_centers)
+		# sse = model.summary.trainingCost
 		sse = calculate_sse(predictions, cluster_centers)
 		predictions.unpersist()
 		cosine_sse_scores[k] = sse
@@ -97,8 +112,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	plt.legend(['silhouette_euclidean', 'silhouette_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Silhouette score")
-	plt.savefig("b_kmeans_silhouette_scores.png")
-
+	plt.savefig(algorithm + "_silhouette_scores.png")
 
 	plt.clf()
 	plt.plot(euclidean_sse_scores.keys(), euclidean_sse_scores.values())
@@ -107,7 +121,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	plt.legend(['sse_euclidean', 'sse_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("SSE")
-	plt.savefig("b_kmeans_SSE.png")
+	plt.savefig(algorithm + "_SSE.png")
 
 	plt.clf()
 	plt.plot(euclidean_times.keys(), euclidean_times.values())
@@ -116,7 +130,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6):
 	plt.legend(['euclidean_times', 'cosine_times'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Time(ms)")
-	plt.savefig("b_kmeans_times.png")
+	plt.savefig(algorithm + "_times.png")
 
 
 if __name__ == '__main__':
@@ -126,6 +140,12 @@ if __name__ == '__main__':
 		"-d",
 		help="path of the dataset",
 		default="Datasets/Data1.csv"
+	)
+	parser.add_argument(
+		"--algorithm",
+		"-a",
+		help="name of clustering algorithm {kmeans|bkmeans",
+		default="kmeans"
 	)
 	parser.add_argument(
 		"--startk",
@@ -140,4 +160,8 @@ if __name__ == '__main__':
 		default=6
 	)
 	args = parser.parse_args()
-	simulate_kmeans(dataset_path=args.dataset_path, startk=int(args.startk), endk=int(args.endk))
+	simulate_kmeans(
+		dataset_path=args.dataset_path,
+		startk=int(args.startk),
+		endk=int(args.endk),
+		algorithm=args.algorithm)
