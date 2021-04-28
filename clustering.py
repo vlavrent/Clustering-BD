@@ -64,7 +64,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		end = time.time()
 		euclidean_times[k] = end - start
 
-		visualize_predictions(predictions, saving_path, model_name=str(k) + '_kmeans')
+		visualize_predictions(predictions, saving_path, model_name=str(k) + "_e_" + algorithm)
 		predictions.unpersist()
 	print('euclidean_silhouette_scores: ', euclidean_silhouette_scores)
 	print('euclidean_sse_scores: ', euclidean_sse_scores)
@@ -105,7 +105,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		end = time.time()
 		cosine_times[k] = end - start
 
-		visualize_predictions(predictions, saving_path, model_name=str(k) + '_b_kmeans')
+		visualize_predictions(predictions, saving_path, model_name=str(k) + "_c_" + algorithm)
 		predictions.unpersist()
 
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
