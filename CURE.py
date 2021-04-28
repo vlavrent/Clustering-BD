@@ -12,7 +12,7 @@ def shift_towards_centroid(center,rep_points):
     print(rep_points)
 
 
-def representatives(data_array,centers,thresshold):
+def representatives(data_array,centers,threshold):
     centroid = 0
     point1 = []
     points_dist = defaultdict(list)
@@ -52,7 +52,7 @@ def representatives(data_array,centers,thresshold):
         centroid = centroid + 1
 
 
-    for thres in range(2,thresshold):
+    for thres in range(2,threshold):
         for k,v in points_dist.items():
             x = 0
             y = 0
@@ -83,7 +83,7 @@ def representatives(data_array,centers,thresshold):
 
 
 
-def Cure(path,thresshold,k):
+def Cure(path,threshold,k):
     spark = SparkSession.builder.master("local[*]").appName("kmeans").getOrCreate()
 
     df = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()),\
@@ -124,7 +124,7 @@ def Cure(path,thresshold,k):
 
 
 
-    represent_points = representatives(data_array,centers,thresshold)
+    represent_points = representatives(data_array,centers,threshold)
 
 
 
@@ -139,9 +139,9 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--thresshold",
+        "--threshold",
         "-th",
-        help="Thresshold of representative points",
+        help="Threshold of representative points",
         default=2
     )
 
