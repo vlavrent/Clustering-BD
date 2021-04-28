@@ -125,8 +125,8 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	pd.DataFrame.from_dict(results_dir).to_csv(saving_path + algorithm + '_results.csv')
 
 	plt.clf()
-	plt.plot(euclidean_silhouette_scores.keys(), euclidean_silhouette_scores.values())
-	plt.plot(cosine_silhouette_scores.keys(), cosine_silhouette_scores.values())
+	plt.plot(list(euclidean_silhouette_scores.keys()), list(euclidean_silhouette_scores.values()))
+	plt.plot(list(cosine_silhouette_scores.keys()), list(cosine_silhouette_scores.values()))
 	plt.title("Optimal number of clusters based on Silhouette")
 	plt.legend(['silhouette_euclidean', 'silhouette_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
@@ -134,8 +134,8 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	plt.savefig(saving_path + algorithm + "_silhouette_scores.png")
 
 	plt.clf()
-	plt.plot(euclidean_sse_scores.keys(), euclidean_sse_scores.values())
-	plt.plot(cosine_sse_scores.keys(), cosine_sse_scores.values())
+	plt.plot(list(euclidean_sse_scores.keys()), list(euclidean_sse_scores.values()))
+	plt.plot(list(cosine_sse_scores.keys()), list(cosine_sse_scores.values()))
 	plt.title("Optimal number of clusters based on SSE")
 	plt.legend(['sse_euclidean', 'sse_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
@@ -143,12 +143,12 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	plt.savefig(saving_path + algorithm + "_SSE.png")
 
 	plt.clf()
-	plt.plot(euclidean_times.keys(), euclidean_times.values())
-	plt.plot(cosine_times.keys(), cosine_times.values())
+	plt.plot(list(euclidean_times.keys()), list(euclidean_times.values()))
+	plt.plot(list(cosine_times.keys()), list(cosine_times.values()))
 	plt.title("Time fluctuation")
 	plt.legend(['euclidean_times', 'cosine_times'], loc='best')
 	plt.xlabel("Number of clusters")
-	plt.ylabel("Time(ms)")
+	plt.ylabel("Time(s)")
 	plt.savefig(saving_path + algorithm + "_times.png")
 
 
