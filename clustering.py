@@ -36,9 +36,9 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		start = time.time()
 
 		if algorithm == 'kmeans':
-			algo = KMeans()
+			algo = KMeans(maxIter=40)
 		elif algorithm == 'bkmeans':
-			algo = BisectingKMeans()
+			algo = BisectingKMeans(maxIter=40)
 
 		algo.setK(k).setSeed(13) \
 			.setFeaturesCol("features") \
@@ -77,9 +77,9 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		start = time.time()
 
 		if algorithm == 'kmeans':
-			algo = KMeans()
+			algo = KMeans(maxIter=40)
 		elif algorithm == 'bkmeans':
-			algo = BisectingKMeans()
+			algo = BisectingKMeans(maxIter=40)
 
 		algo.setK(k).setSeed(13) \
 			.setFeaturesCol("features") \

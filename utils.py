@@ -41,3 +41,6 @@ def visualize_predictions(predictions, saving_path, model_name):
 
 	fig.savefig(saving_path + model_name + '.png')
 
+	plt.clf()
+	plt.close(fig)
+
