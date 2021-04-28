@@ -8,6 +8,9 @@ import argparse
 from utils import calculate_sse, visualize_predictions
 import time
 import os
+import pandas as pd
+from tqdm import tqdm
+
 
 def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	spark = SparkSession.builder.master("local[*]"). \
@@ -32,7 +35,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	euclidean_silhouette_scores = {}
 	euclidean_sse_scores = {}
 	euclidean_times = {}
-	for k in range(startk, endk + 1):
+	for k in tqdm(range(startk, endk + 1)):
 		start = time.time()
 
 		if algorithm == 'kmeans':
@@ -73,7 +76,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	cosine_silhouette_scores = {}
 	cosine_sse_scores = {}
 	cosine_times = {}
-	for k in range(startk, endk + 1):
+	for k in tqdm(range(startk, endk + 1)):
 		start = time.time()
 
 		if algorithm == 'kmeans':
@@ -111,6 +114,15 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
 	print('cosine_sse_scores: ', cosine_sse_scores)
 	print('cosine_times: ', cosine_times)
+
+	results_dir = {'euclidean_silhouette_scores': euclidean_silhouette_scores,
+				   'euclidean_sse_scores': euclidean_sse_scores,
+				   'euclidean_times': euclidean_times,
+				   'cosine_silhouette_scores': cosine_silhouette_scores,
+				   'cosine_sse_scores': cosine_sse_scores,
+				   'cosine_times': cosine_times}
+
+	pd.DataFrame.from_dict(results_dir).to_csv(saving_path + algorithm + '_results.csv')
 
 	plt.clf()
 	plt.plot(euclidean_silhouette_scores.keys(), euclidean_silhouette_scores.values())
