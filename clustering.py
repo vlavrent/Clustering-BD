@@ -7,12 +7,16 @@ from matplotlib import pyplot as plt
 import argparse
 from utils import calculate_sse
 import time
-
+import os
 
 def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	spark = SparkSession.builder.master("local[*]"). \
 		appName("kmeans"). \
 		getOrCreate()
+	saving_path = 'clustering_experiments_results/'
+
+	if not os.path.exists(saving_path):
+		os.mkdir(saving_path)
 
 	dataset = spark.read.csv(dataset_path, header=True) \
 		.select(F.col("0").cast(spark_types.FloatType()),
@@ -57,6 +61,8 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		sse = calculate_sse(predictions, cluster_centers)
 		predictions.unpersist()
 		euclidean_sse_scores[k] = sse
+
+
 
 		end = time.time()
 		euclidean_times[k] = end - start
@@ -112,7 +118,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	plt.legend(['silhouette_euclidean', 'silhouette_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Silhouette score")
-	plt.savefig(algorithm + "_silhouette_scores.png")
+	plt.savefig(saving_path + algorithm + "_silhouette_scores.png")
 
 	plt.clf()
 	plt.plot(euclidean_sse_scores.keys(), euclidean_sse_scores.values())
@@ -121,7 +127,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	plt.legend(['sse_euclidean', 'sse_cosine'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("SSE")
-	plt.savefig(algorithm + "_SSE.png")
+	plt.savefig(saving_path + algorithm + "_SSE.png")
 
 	plt.clf()
 	plt.plot(euclidean_times.keys(), euclidean_times.values())
@@ -130,7 +136,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	plt.legend(['euclidean_times', 'cosine_times'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Time(ms)")
-	plt.savefig(algorithm + "_times.png")
+	plt.savefig(saving_path + algorithm + "_times.png")
 
 
 if __name__ == '__main__':
