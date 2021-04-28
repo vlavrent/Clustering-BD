@@ -6,14 +6,23 @@ import math
 import numpy as np
 from collections import defaultdict
 from pyspark.ml.clustering import BisectingKMeans
+import pandas as pd
+
+def shift_towards_centroid(center,rep_points):
+    print(rep_points)
 
 
-def representatives(data_array,centers):
+def representatives(data_array,centers,thresshold):
     centroid = 0
     point1 = []
     points_dist = defaultdict(list)
+    new = [[]]
+
     for i in data_array:
-        maxim = -1
+        maxim = -100
+        max2 = -100
+        row=0
+        print(i[1])
         for j in i[1]:
             x = (j[0]-centers[centroid][0])*(j[0]-centers[centroid][0])
             y = (j[1]-centers[centroid][1])*(j[1]-centers[centroid][1])
@@ -21,9 +30,12 @@ def representatives(data_array,centers):
             if maxim<dist:
                 maxim = dist
                 point = [j[0],j[1]]
+                row_del = row
+            row = row +1
         point1.append(point)
         points_dist[centroid].append(point)
 
+        row2 = 0
         for j in i[1]:
             x = (j[0]-point1[centroid][0])*(j[0]-point1[centroid][0])
             y = (j[1]-point1[centroid][1])*(j[1]-point1[centroid][1])
@@ -31,13 +43,43 @@ def representatives(data_array,centers):
             if max2< dist:
                 max2 = dist
                 point2 = [j[0],j[1]]
+                row_del2 = row2
+            row2 = row2+1
         points_dist[centroid].append(point2)
+        d = np.delete(i[1],(row_del,row_del2),axis=0)
+        new.append(d)
 
         centroid = centroid + 1
-    print(point1)
 
 
+    for thres in range(2,thresshold):
+        for k,v in points_dist.items():
+            x = 0
+            y = 0
+            max = -100
+            for i in range(len(v)):
+                x = x+v[i][0]
+                y = y+v[i][1]
+            length = len(v)
+            x = x/length
+            y = y/length
+        #print(x,y)
+        #print(v)
 
+            for i in range(len(new[k+1])):
+                ex = (new[k+1][i][0]-x)*(new[k+1][i][0]-x)
+                ey = (new[k+1][i][1]-y)*(new[k+1][i][1]-y)
+                dist = math.sqrt(ex+ey)
+                if max<dist:
+                    max = dist
+                    point = [new[k+1][i][0],new[k+1][i][1]]
+                    row = i
+            points_dist[k].append(point)
+            new[k+1] = np.delete(new[k+1],row,axis=0)
+
+    shift_towards_centroid(centers,points_dist)
+
+    return points_dist
 
 
 
@@ -82,13 +124,7 @@ def Cure(path,thresshold,k):
 
 
 
-    representatives(data_array,centers)
-
-
-
-
-
-
+    represent_points = representatives(data_array,centers,thresshold)
 
 
 
@@ -119,9 +155,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     Cure(args.dataset_path,int(args.thresshold),int(args.kvalue))
-
-
-
-
 
 
