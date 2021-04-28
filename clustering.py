@@ -40,7 +40,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		elif algorithm == 'bkmeans':
 			algo = BisectingKMeans(maxIter=40)
 
-		algo.setK(k).setSeed(13) \
+		algo.setK(k).setSeed(4) \
 			.setFeaturesCol("features") \
 			.setPredictionCol("prediction") \
 			.setDistanceMeasure('euclidean')
@@ -81,7 +81,7 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		elif algorithm == 'bkmeans':
 			algo = BisectingKMeans(maxIter=40)
 
-		algo.setK(k).setSeed(13) \
+		algo.setK(k).setSeed(4) \
 			.setFeaturesCol("features") \
 			.setPredictionCol("prediction") \
 			.setDistanceMeasure('cosine')
