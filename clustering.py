@@ -5,7 +5,7 @@ from pyspark.ml.clustering import KMeans, BisectingKMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
 from matplotlib import pyplot as plt
 import argparse
-from utils import calculate_sse
+from utils import calculate_sse, visualize_predictions
 import time
 import os
 
@@ -13,7 +13,8 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	spark = SparkSession.builder.master("local[*]"). \
 		appName("kmeans"). \
 		getOrCreate()
-	saving_path = 'clustering_experiments_results/'
+
+	saving_path = dataset_path.split('/')[1].split('.')[0] + '_clustering_experiments_results/'
 
 	if not os.path.exists(saving_path):
 		os.mkdir(saving_path)
@@ -59,13 +60,12 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		spark.sparkContext.broadcast(cluster_centers)
 		# sse = model.summary.trainingCost
 		sse = calculate_sse(predictions, cluster_centers)
-		predictions.unpersist()
 		euclidean_sse_scores[k] = sse
-
-
-
 		end = time.time()
 		euclidean_times[k] = end - start
+
+		visualize_predictions(predictions, saving_path, model_name=str(k) + '_kmeans')
+		predictions.unpersist()
 	print('euclidean_silhouette_scores: ', euclidean_silhouette_scores)
 	print('euclidean_sse_scores: ', euclidean_sse_scores)
 	print('euclidean_times: ', euclidean_times)
@@ -101,11 +101,12 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		spark.sparkContext.broadcast(cluster_centers)
 		# sse = model.summary.trainingCost
 		sse = calculate_sse(predictions, cluster_centers)
-		predictions.unpersist()
 		cosine_sse_scores[k] = sse
-
 		end = time.time()
 		cosine_times[k] = end - start
+
+		visualize_predictions(predictions, saving_path, model_name=str(k) + '_b_kmeans')
+		predictions.unpersist()
 
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
 	print('cosine_sse_scores: ', cosine_sse_scores)
