@@ -17,7 +17,11 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		appName("kmeans"). \
 		getOrCreate()
 
-	saving_path = dataset_path.split('/')[1].split('.')[0] + '_clustering_experiments_results/'
+	outer_saving_path = dataset_path.split('/')[1].split('.')[0] + '_clustering_experiments_results/'
+	if not os.path.exists(outer_saving_path):
+		os.mkdir(outer_saving_path)
+
+	saving_path = outer_saving_path + algorithm + "/"
 
 	if not os.path.exists(saving_path):
 		os.mkdir(saving_path)
@@ -67,7 +71,10 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		end = time.time()
 		euclidean_times[k] = end - start
 
-		visualize_predictions(predictions, saving_path, model_name=str(k) + "_e_" + algorithm)
+		visualizations_saving_path = saving_path + "euclidean/"
+		if not os.path.exists(visualizations_saving_path):
+			os.mkdir(visualizations_saving_path)
+		visualize_predictions(predictions, visualizations_saving_path, model_name=str(k) + "_e_" + algorithm)
 		predictions.unpersist()
 	print('euclidean_silhouette_scores: ', euclidean_silhouette_scores)
 	print('euclidean_sse_scores: ', euclidean_sse_scores)
@@ -108,7 +115,10 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		end = time.time()
 		cosine_times[k] = end - start
 
-		visualize_predictions(predictions, saving_path, model_name=str(k) + "_c_" + algorithm)
+		visualizations_saving_path = saving_path + "cosine/"
+		if not os.path.exists(visualizations_saving_path):
+			os.mkdir(visualizations_saving_path)
+		visualize_predictions(predictions, visualizations_saving_path, model_name=str(k) + "_c_" + algorithm)
 		predictions.unpersist()
 
 	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
