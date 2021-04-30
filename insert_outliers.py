@@ -55,14 +55,15 @@ def insert_outliers(dataset_path):
 	f = np.reshape(kernel(positions).T, xx.shape)
 	plot_density_estimation(xx, yy, f, xmin, xmax, ymin, ymax, dataset_path.split("/")[1])
 
-	n = int(dataset.count() * 0.003)
+	n = int(dataset.count() * 0.006)
 	print("Starting number of outliers: ", n)
-	xy_min = [-3, -3]
-	xy_max = [3, 3]
+	xy_min = [-2, -2]
+	xy_max = [2.5, 2]
 	np.random.seed(seed=4)
 	outlier_data = np.random.uniform(low=xy_min, high=xy_max, size=(n, 2))
 	outlier_data_pdfs = kernel.evaluate(outlier_data.T)
-	outlier_data = [point for index, point in enumerate(outlier_data) if outlier_data_pdfs[index] < 0.01]
+	outlier_data = [point for index, point in enumerate(outlier_data)
+					if 0.0001 < outlier_data_pdfs[index] < 0.005]
 	print("Remaining number of outliers: ", len(outlier_data))
 	df = pd.DataFrame(outlier_data, columns=list(["0", "1"]))
 	outlier_dataset = spark.createDataFrame(df).withColumn("outlier", F.lit(1))
