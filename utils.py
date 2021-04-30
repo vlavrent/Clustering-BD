@@ -19,6 +19,41 @@ def calculate_sse(predictions, cluster_centers):
 		.agg(F.sum('squared_distance').alias('sse')).collect()[0]['sse']
 
 
+def create_scatter_plot(x, y, c, save=False, fig_saving_path=None):
+	fig, ax = plt.subplots()
+
+	scatter = ax.scatter(x, y, c=c)
+
+	# produce a legend with the unique colors from the scatter
+	legend1 = ax.legend(*scatter.legend_elements(),
+						loc="upper right", title="noise")
+	ax.add_artist(legend1)
+
+	if save:
+		fig.savefig(fig_saving_path)
+	else:
+		plt.show()
+
+	plt.clf()
+	plt.close(fig)
+
+
+def visualize_outliers(dataset, dataset_name):
+	data_list = dataset.collect()
+
+	x = []
+	y = []
+	n = []
+
+	for item in data_list:
+
+		x.append(item['0'])
+		y.append(item['1'])
+		n.append(item['outlier'])
+
+	create_scatter_plot(x, y, n, save=True, fig_saving_path=dataset_name+"_outliers_scatter_plot.png")
+
+
 def visualize_predictions(predictions, saving_path, model_name):
 	predictions_list = predictions.select('features', 'prediction').collect()
 
@@ -30,17 +65,8 @@ def visualize_predictions(predictions, saving_path, model_name):
 		y.append(item['features'][1])
 		p.append(item['prediction'])
 
-	fig, ax = plt.subplots()
+	fig_saving_path = saving_path + model_name + '.png'
 
-	scatter = ax.scatter(x, y, c=p)
+	create_scatter_plot(x, y, p, save=True, fig_saving_path=fig_saving_path)
 
-	# produce a legend with the unique colors from the scatter
-	legend1 = ax.legend(*scatter.legend_elements(),
-						loc="upper right", title="clusters")
-	ax.add_artist(legend1)
-
-	fig.savefig(saving_path + model_name + '.png')
-
-	plt.clf()
-	plt.close(fig)
 
