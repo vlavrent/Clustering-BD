@@ -9,7 +9,19 @@ from pyspark.ml.clustering import BisectingKMeans
 import pandas as pd
 
 def shift_towards_centroid(center,rep_points):
-    print(rep_points)
+
+    p = 0.2
+    shifted = defaultdict(list)
+
+    for k,v in rep_points.items():
+        for i in range(len(v)):
+            x = v[i][0] - (p*center[k][0])
+            y = v[i][1] - (p*center[k][1])
+            point = [x,y]
+            shifted[k].append(point)
+
+    return  shifted
+
 
 
 def representatives(data_array,centers,threshold):
@@ -22,7 +34,7 @@ def representatives(data_array,centers,threshold):
         maxim = -100
         max2 = -100
         row=0
-        print(i[1])
+        #print(i[1])
         for j in i[1]:
             x = (j[0]-centers[centroid][0])*(j[0]-centers[centroid][0])
             y = (j[1]-centers[centroid][1])*(j[1]-centers[centroid][1])
@@ -77,7 +89,7 @@ def representatives(data_array,centers,threshold):
             points_dist[k].append(point)
             new[k+1] = np.delete(new[k+1],row,axis=0)
 
-    shift_towards_centroid(centers,points_dist)
+    shifted_centroids = shift_towards_centroid(centers,points_dist)
 
     return points_dist
 
@@ -128,6 +140,9 @@ def Cure(path,threshold,k):
 
 
 
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -154,6 +169,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    Cure(args.dataset_path,int(args.thresshold),int(args.kvalue))
+    Cure(args.dataset_path,int(args.threshold),int(args.kvalue))
 
 
