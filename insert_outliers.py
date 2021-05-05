@@ -24,7 +24,7 @@ def plot_density_estimation(xx, yy, f, xmin, xmax, ymin, ymax, dataset_name):
 	plt.savefig(dataset_name + "_density_estimation.png")
 
 
-def insert_outliers(dataset_path):
+def insert_outliers(dataset_path, saving_path):
 	spark = SparkSession.builder.master("local[*]"). \
 		appName("insert_outliers"). \
 		getOrCreate()
@@ -72,6 +72,8 @@ def insert_outliers(dataset_path):
 
 	visualize_outliers(dataset_with_outliers, dataset_path.split("/")[1])
 
+	dataset_with_outliers.coalesce(1).write.csv(saving_path, header=True, mode="overwrite")
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
@@ -81,5 +83,11 @@ if __name__ == '__main__':
 		help="path of the dataset",
 		default="Datasets/Data1.csv"
 	)
+	parser.add_argument(
+		"--saving_path",
+		"-s",
+		help="path to save dataset with outliers",
+		default="Datasets/Data1_with_outliers"
+	)
 	args = parser.parse_args()
-	insert_outliers(args.dataset_path)
+	insert_outliers(args.dataset_path, args.saving_path)
