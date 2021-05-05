@@ -91,7 +91,7 @@ def representatives(data_array,centers,threshold):
 
     shifted_centroids = shift_towards_centroid(centers,points_dist)
 
-    return points_dist
+    return shifted_centroids
 
 
 
@@ -103,7 +103,7 @@ def Cure(path,threshold,k):
 
 
 
-    sample = df.sample(False,0.0001,12)
+    sample = df.sample(False,0.5,12)
     print(sample.count())
     assembler = VectorAssembler(
         inputCols=["0", "1"],
