@@ -162,7 +162,8 @@ def Cure(path,threshold,k):
 
 
 
-    prediction_df = df.withColumn("prediction", assign_points(represent_points)(F.col("0"), F.col("1"))).show()
+    prediction_df = df.withColumn("prediction", assign_points(represent_points)(F.col("0"), F.col("1")))
+    prediction_df.show()
 
 
 
