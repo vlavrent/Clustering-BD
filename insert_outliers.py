@@ -7,7 +7,7 @@ import scipy.stats as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
+from random import sample
 
 def plot_density_estimation(xx, yy, f, xmin, xmax, ymin, ymax, dataset_name):
 	fig = plt.figure(figsize=(8, 8))
@@ -64,6 +64,13 @@ def insert_outliers(dataset_path, saving_path):
 	outlier_data_pdfs = kernel.evaluate(outlier_data.T)
 	outlier_data = [point for index, point in enumerate(outlier_data)
 					if 0.00001 < outlier_data_pdfs[index] < 0.005]
+
+	outlier_data = sample(outlier_data, int(n * 0.1))
+	duplicate_outlier_data = []
+	for point in outlier_data:
+		for i in range(10):
+			duplicate_outlier_data.append(point)
+	outlier_data = duplicate_outlier_data
 	print("Remaining number of outliers: ", len(outlier_data))
 	df = pd.DataFrame(outlier_data, columns=list(["0", "1"]))
 	outlier_dataset = spark.createDataFrame(df).withColumn("outlier", F.lit(1))
