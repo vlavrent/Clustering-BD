@@ -1,4 +1,5 @@
 import argparse
+import time
 
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
@@ -54,6 +55,7 @@ def find_outliers(dataset_path, saving_path):
 			F.col("1").cast(spark_types.FloatType()),
 				F.col("outlier"))
 
+	start = time.time()
 	assembler = VectorAssembler(
 		inputCols=["0", "1"],
 		outputCol="features")
@@ -73,6 +75,7 @@ def find_outliers(dataset_path, saving_path):
 														 F.collect_list("outlier").alias("outlier_list"))
 	grid_dataset_with_predictions = grid_dataset.withColumn("prediction_list", compute_outliers(F.col("features_list")))
 	grid_dataset_with_predictions.write.parquet(saving_path, mode="overwrite")
+	print("Time :", time.time() - start)
 
 
 if __name__ == '__main__':
