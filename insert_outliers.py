@@ -24,7 +24,7 @@ def plot_density_estimation(xx, yy, f, xmin, xmax, ymin, ymax, dataset_name):
 	plt.savefig(dataset_name + "_density_estimation.png")
 
 
-def insert_outliers(dataset_path, saving_path):
+def insert_outliers(dataset_path, saving_path, percentage_to_keep=0.025, number_of_duplicates=20):
 	spark = SparkSession.builder.master("local[*]"). \
 		appName("insert_outliers"). \
 		getOrCreate()
@@ -65,10 +65,10 @@ def insert_outliers(dataset_path, saving_path):
 	outlier_data = [point for index, point in enumerate(outlier_data)
 					if 0.00001 < outlier_data_pdfs[index] < 0.005]
 
-	outlier_data = sample(outlier_data, int(n * 0.1))
+	outlier_data = sample(outlier_data, int(n * percentage_to_keep))
 	duplicate_outlier_data = []
 	for point in outlier_data:
-		for i in range(10):
+		for i in range(number_of_duplicates):
 			duplicate_outlier_data.append(point)
 	outlier_data = duplicate_outlier_data
 	print("Remaining number of outliers: ", len(outlier_data))
@@ -96,5 +96,21 @@ if __name__ == '__main__':
 		help="path to save dataset with outliers",
 		default="Datasets/Data1_with_outliers"
 	)
+	parser.add_argument(
+		"--percentage",
+		"-p",
+		help="percentage to keep",
+		default=0.025
+	)
+	parser.add_argument(
+		"--number",
+		"-n",
+		help="number of duplicates",
+		default=20
+	)
 	args = parser.parse_args()
-	insert_outliers(args.dataset_path, args.saving_path)
+	insert_outliers(
+		args.dataset_path,
+		args.saving_path,
+		float(args.percentage),
+		int(args.number))
