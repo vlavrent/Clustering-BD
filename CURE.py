@@ -66,7 +66,7 @@ def assign_points(represent_points):
 
 
 def Cure(path,threshold,k):
-   spark = SparkSession.builder.master("local[*]").appName("kmeans").getOrCreate()
+        spark = SparkSession.builder.master("local[*]").appName("kmeans").getOrCreate()
 
         df = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()), \
                                                       F.col("1").cast(spark_types.FloatType()))
@@ -115,13 +115,13 @@ def Cure(path,threshold,k):
                 rep_Points = representatives(data_array[i][1],centers[i],threshold)
                 points_dist[i].append(rep_Points.tolist())
 
-    df = assembler.transform(df)
-    #df.show()
+        df = assembler.transform(df)
+        #df.show()
 
 
 
-    prediction_df = df.withColumn("prediction", assign_points(points_dist)(F.col("0"), F.col("1")))
-    prediction_df.show()
+        prediction_df = df.withColumn("prediction", assign_points(points_dist)(F.col("0"), F.col("1")))
+        prediction_df.show()
 
 
 
