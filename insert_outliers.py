@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from random import sample
 
+
 def plot_density_estimation(xx, yy, f, xmin, xmax, ymin, ymax, dataset_name):
 	fig = plt.figure(figsize=(8, 8))
 	ax = fig.gca()
