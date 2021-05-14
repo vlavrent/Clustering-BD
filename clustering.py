@@ -11,12 +11,13 @@ import os
 import pandas as pd
 from tqdm import tqdm
 
-
+# Example: spark-submit --master local[*] --driver-memory 10g  clustering.py -d Datasets/Data1.csv -a kmeans -s 2 -e 14
 def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
-	spark = SparkSession.builder.master("local[*]"). \
-		appName("kmeans"). \
+	spark = SparkSession.builder. \
+		appName("clustering"). \
 		getOrCreate()
 
+	spark.sparkContext.setLogLevel('WARN')
 	outer_saving_path = dataset_path.split('/')[1].split('.')[0] + '_clustering_experiments_results/'
 	if not os.path.exists(outer_saving_path):
 		os.mkdir(outer_saving_path)
