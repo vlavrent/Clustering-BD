@@ -17,11 +17,6 @@ from pyspark.ml.evaluation import ClusteringEvaluator
 #from utils import calculate_sse
 from tqdm import tqdm
 
-import os
-import sys
-
-os.environ['PYSPARK_PYTHON'] = sys.executable
-os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 def calculate_squared_distance(cluster_centers):
     def f(features, prediction):
@@ -235,8 +230,8 @@ def Cure(path,threshold,k):
     #Collect representative points in main memory
     df = assembler.transform(df)
 
-    rep = pred.select("prediction","representatives")
-    rep = rep.rdd.collect()
+    rep = pred.select("prediction","representatives").collect()
+
 
     points_dist = defaultdict(list)
     for i in rep:
@@ -254,8 +249,7 @@ def Cure(path,threshold,k):
 
 
 
-    rep2 = merged.select("prediction","representatives")
-    rep2 = rep2.rdd.collect()
+    rep2 = merged.select("prediction","representatives").collect()
 
 
     dist_points = defaultdict(list)

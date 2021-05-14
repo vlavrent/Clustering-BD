@@ -1,96 +1,156 @@
-import argparse
-import time
-
-import numpy as np
 from pyspark.ml.feature import VectorAssembler
 from pyspark.sql import functions as F, SparkSession
 from pyspark.sql import types as spark_types
-from sklearn.neighbors import NearestNeighbors
-from scipy.spatial.distance import euclidean
+import argparse
+import numpy as np
+from collections import defaultdict
+from pyspark.ml.clustering import BisectingKMeans
+from scipy.spatial import distance
+from pyspark.sql.functions import udf
+from pyspark.sql.types import *
+import time
+from matplotlib import pyplot as plt
+import pyspark.sql.functions as ps
+from pyspark.ml.evaluation import ClusteringEvaluator
 
 
-def cellUDF(minValue, res):
-	def f(x):
-		return int((x - minValue) / res)
-	return F.udf(f, spark_types.IntegerType())
 
 
-@F.udf(returnType=spark_types.ArrayType(spark_types.IntegerType()))
-def compute_outliers(features_list):
+def dist(vecA, vecB):
+    return np.sqrt(np.power(vecA - vecB, 2).sum())
 
-	if len(features_list) < 50:
-		return [1] * len(features_list)
+def representatives(data,center,threshold):
+    tempSet = None
 
-	neigh = NearestNeighbors(n_neighbors=50)
-	neigh.fit(features_list)
+    for i in range(1, threshold+1):
+        maxDist = -100
+        maxPoint = None
+        for p in range(0, len(data)):
 
-	neighbourhoods = []
-	neighbours_list = neigh.kneighbors(features_list, n_neighbors=50, return_distance=False)
-	for index, neighbours in enumerate(neighbours_list):
-		neighbours_features = []
-		for neighbour in neighbours:
-			neighbours_features.append(features_list[neighbour])
-		neighbourhoods.append(neighbours_features)
+            if i == 1:
+                minDist = dist(data[p], center)
+            else:
+                X = np.vstack([tempSet,data[p]])
+                tmpDist = distance.pdist(X)
+                minDist = tmpDist.min()
+            if minDist >= maxDist:
+                maxDist = minDist
+                maxPoint = data[p]
+        if tempSet is None:
+            tempSet = maxPoint
+        else:
+            tempSet = np.vstack((tempSet, maxPoint))
+    for j in range(len(tempSet)):
+        if j==0:
+            repPoints = None
+        if repPoints is None:
+            repPoints = tempSet[j,:] + 0.25 * (center - tempSet[j,:])
+        else:
+            repPoints = np.vstack((repPoints, tempSet[j,:] + 0.25 * (center - tempSet[j,:])))
 
-	predictions = []
-	for index, neighbours_features in enumerate(neighbourhoods):
-		mean = np.mean(neighbours_features, axis=0)
-		std = np.std(neighbours_features, axis=0)
-		if euclidean(features_list[index], mean) > euclidean(2 * std, mean):
-			predictions.append(1)
-		else:
-			predictions.append(0)
-
-	return predictions
+    return repPoints.tolist()
 
 
-def find_outliers(dataset_path, saving_path):
-	spark = SparkSession.builder.master("local[*]"). \
-		appName("find_outliers"). \
-		getOrCreate()
 
-	dataset_with_outliers = spark.read.csv(dataset_path, header=True)\
-		.select(F.monotonically_increasing_id().alias("id"),
-		F.col("0").cast(spark_types.FloatType()),
-			F.col("1").cast(spark_types.FloatType()),
-				F.col("outlier"))
+def calc_representatives(centers, threshold):
+    def f(points, prediction):
+        repPoints = representatives(points, centers[int(prediction)], threshold)
 
-	start = time.time()
-	assembler = VectorAssembler(
-		inputCols=["0", "1"],
-		outputCol="features")
+        return repPoints
+    return F.udf(f, spark_types.ArrayType(spark_types.ArrayType(spark_types.FloatType())))
 
-	dataset_with_outliers = assembler.transform(dataset_with_outliers)
 
-	resolution = 0.2
-	mins = dataset_with_outliers.select(F.min("0"), F.min("1")).head()
-	minX = mins["min(0)"]
-	minY = mins["min(1)"]
 
-	XCoordsUdf = cellUDF(minX, resolution)
-	YCoordsUdf = cellUDF(minY, resolution)
-	relData = dataset_with_outliers.withColumn("cellx", XCoordsUdf("0")).withColumn("celly", YCoordsUdf("1"))
 
-	grid_dataset = relData.groupby("cellx", "celly").agg(F.collect_list("features").alias("features_list"),
-														 F.collect_list("outlier").alias("outlier_list"))
-	grid_dataset_with_predictions = grid_dataset.withColumn("prediction_list", compute_outliers(F.col("features_list")))
-	grid_dataset_with_predictions.write.parquet(saving_path, mode="overwrite")
-	print("Time :", time.time() - start)
+
+
+
+def Cure(path,threshold,k):
+
+
+    spark = SparkSession.builder.master("local[*]").appName("kmeans").getOrCreate()
+
+    df = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()), \
+                                                  F.col("1").cast(spark_types.FloatType()))
+
+    threshold=6
+    k=4
+    print("hey")
+
+
+    #Export a sample of data
+    sample = df.sample(False,0.3,7)
+
+    assembler = VectorAssembler(
+        inputCols=["0", "1"],
+        outputCol="features")
+
+    dataset = assembler.transform(sample)
+
+
+    start = time.time()
+    #Apply hierarchical clustering in a sample of data
+    kmeans = BisectingKMeans().setK(k).setSeed(13) \
+        .setFeaturesCol("features") \
+        .setPredictionCol("prediction") \
+        .setDistanceMeasure('euclidean')
+
+    model = kmeans.fit(dataset)
+    predictions = model.transform(dataset)
+
+    centers = model.clusterCenters()
+
+    #Find representative points
+    pred = predictions.groupBy('prediction').agg(F.collect_list('features').alias('points'))
+    pred.persist()
+    pred = pred.sort("prediction")
+    #pred.show()
+
+    pred = pred.withColumn("representatives", calc_representatives(centers, threshold)(F.col('points'), F.col('prediction')))
+    #pred.select("prediction", "representatives").show(truncate=False)
+
+
+
+    pred.unpersist()
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser()
-	parser.add_argument(
-		"--dataset_path",
-		"-d",
-		help="path of the dataset",
-		default="Datasets/Data1_with_outliers"
-	)
-	parser.add_argument(
-		"--saving_path",
-		"-s",
-		help="path to save dataset without outliers",
-		default="Datasets/Data1_without_outliers"
-	)
-	args = parser.parse_args()
-	find_outliers(args.dataset_path, args.saving_path)
+
+
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--dataset_path",
+        "-d",
+        help="path of the dataset",
+        default="Data1.csv"
+    )
+
+    parser.add_argument(
+        "--threshold",
+        "-th",
+        help="Threshold of representative points",
+        default=2
+    )
+
+    parser.add_argument(
+        "--kvalue",
+        "-k",
+        help="K value for hierarchical clustering",
+        default=6
+    )
+
+    args = parser.parse_args()
+
+
+    Cure(args.dataset_path,int(args.threshold),int(args.kvalue))
