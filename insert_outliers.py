@@ -62,6 +62,7 @@ def insert_outliers(dataset_path, saving_path, percentage_to_keep=0.025, number_
 	xy_max = [2.5, 2]
 	np.random.seed(seed=4)
 	outlier_data = np.random.uniform(low=xy_min, high=xy_max, size=(n, 2))
+	# Note: gaussian_kde has variables in rows and observations in columns, so reversed orientation from the usual in stats
 	outlier_data_pdfs = kernel.evaluate(outlier_data.T)
 	outlier_data = [point for index, point in enumerate(outlier_data)
 					if 0.00001 < outlier_data_pdfs[index] < 0.005]
