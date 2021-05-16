@@ -9,16 +9,25 @@ from CURE import calc_representatives
 from scipy.spatial import distance
 
 
-def predict_outliers(represent_points):
+def predict_outliers(representative_points_dict, centers):
     def f(features):
 
-        min = 2000
-        for centroid, representative in represent_points.items():
-            for i in representative:
+        min_dist = 2000
+        for centroid, values in representative_points_dict.items():
+            for i in values["representatives"]:
                 dist = distance.euclidean(features, i)
-                if dist < min:
-                    min = dist
+                if dist < min_dist:
+                    min_dist = dist
                     c = centroid
+
+        centroid_dist = distance.euclidean(features, centers[int(c)])
+        threshold = representative_points_dict[c]["mean_dist_center"] \
+                    + (2 * representative_points_dict[c]["std_dev_dist_center"])
+
+        if centroid_dist > threshold:
+            return 1.0
+        else:
+            return 0.0
 
     return F.udf(f, spark_types.DoubleType())
 
@@ -75,7 +84,6 @@ def find_outliers(path, threshold, k):
 
     centers = model.clusterCenters()
 
-    print(centers)
     # Find representative points
     pred = predictions.groupBy('prediction').agg(F.collect_list('features').alias('points'))
     pred = pred.sort("prediction")
@@ -87,7 +95,25 @@ def find_outliers(path, threshold, k):
                     calc_mean_distance_from_center(centers)(F.col("prediction"), F.col("representatives")))\
         .withColumn("std_dev_dist_center",
                     calc_std_dev_distance_from_center(centers)(F.col("prediction"), F.col("representatives")))
-    representative_points.show(truncate=False)
+
+    rep = representative_points.collect()
+
+    representative_points_dict = {}
+    for cluster in rep:
+       representative_points_dict[cluster["prediction"]] = {
+           "representatives": cluster["representatives"],
+           "mean_dist_center": cluster["mean_dist_center"],
+           "std_dev_dist_center": cluster["std_dev_dist_center"]
+       }
+
+    dataset_with_predicted_outliers = all_dataset \
+        .withColumn("prediction", predict_outliers(representative_points_dict, centers)(F.col("features")))
+
+    dataset_with_predicted_outliers.persist()
+    num_of_samples = dataset_with_predicted_outliers.count()
+    true_predictions = dataset_with_predicted_outliers.filter(F.col("prediction") == F.col("outlier")).count()
+    dataset_with_predicted_outliers.write.json("dataset_with_predicted_outliers_cure", mode="overwrite")
+    print("Accuracy: ", true_predictions / num_of_samples)
 
 
 if __name__ == '__main__':
@@ -105,7 +131,7 @@ if __name__ == '__main__':
         "--threshold",
         "-th",
         help="Threshold of representative points",
-        default=4
+        default=8
     )
 
     parser.add_argument(
