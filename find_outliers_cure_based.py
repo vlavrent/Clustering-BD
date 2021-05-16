@@ -7,7 +7,7 @@ from pyspark.ml.clustering import BisectingKMeans
 import time
 from CURE import calc_representatives
 from scipy.spatial import distance
-
+from utils import visualize_outliers
 
 def predict_outliers(representative_points_dict, centers):
     def f(features):
@@ -60,6 +60,7 @@ def find_outliers(path, threshold, k):
 
     spark = SparkSession.builder.master("local[*]").appName("find_outliers_cure_based").getOrCreate()
 
+    spark.sparkContext.setLogLevel('WARN')
     all_dataset = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()),
                                                   F.col("1").cast(spark_types.FloatType()),
                                                   F.col("outlier").cast(spark_types.DoubleType()))
@@ -110,10 +111,22 @@ def find_outliers(path, threshold, k):
         .withColumn("prediction", predict_outliers(representative_points_dict, centers)(F.col("features")))
 
     dataset_with_predicted_outliers.persist()
-    num_of_samples = dataset_with_predicted_outliers.count()
-    true_predictions = dataset_with_predicted_outliers.filter(F.col("prediction") == F.col("outlier")).count()
     dataset_with_predicted_outliers.write.json("dataset_with_predicted_outliers_cure", mode="overwrite")
-    print("Accuracy: ", true_predictions / num_of_samples)
+    print("Time (seconds): ", time.time() - start)
+    tp = dataset_with_predicted_outliers.filter((F.col("prediction") == 1.0) & (F.col("outlier") == 1.0)).count()
+    fp = dataset_with_predicted_outliers.filter((F.col("prediction") == 1.0) & (F.col("outlier") == 0.0)).count()
+    tn = dataset_with_predicted_outliers.filter((F.col("prediction") == 0.0) & (F.col("outlier") == 0.0)).count()
+    fn = dataset_with_predicted_outliers.filter((F.col("prediction") == 0.0) & (F.col("outlier") == 1.0)).count()
+    visualize_outliers(dataset_with_predicted_outliers, path.split("/")[-1], prediction=True)
+    dataset_with_predicted_outliers.unpersist()
+    accuracy = (tp+tn) / (tp+tn+fp+fn)
+    recall_macro = (tp/(tp+fn) + tn/(tn+fp))/2
+    precision_macro = (tp/(tp+fp) + tn/(tn+fn))/2
+    f1_macro = (2 * recall_macro * precision_macro) / (precision_macro + recall_macro)
+    print("Accuracy: ", accuracy)
+    print("Recall (macro): ", recall_macro)
+    print("Precision (macro): ", precision_macro)
+    print("F1 (macro): ", f1_macro)
 
 
 if __name__ == '__main__':

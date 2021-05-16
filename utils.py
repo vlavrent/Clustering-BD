@@ -38,7 +38,7 @@ def create_scatter_plot(x, y, c, s,legend_title, save=False, fig_saving_path=Non
 	plt.close(fig)
 
 
-def visualize_outliers(dataset, dataset_name):
+def visualize_outliers(dataset, dataset_name, prediction=False):
 	data_list = dataset.collect()
 
 	x = []
@@ -49,10 +49,18 @@ def visualize_outliers(dataset, dataset_name):
 
 		x.append(item['0'])
 		y.append(item['1'])
-		n.append(item['outlier'])
+		if prediction:
+			n.append(item['prediction'])
+		else:
+			n.append(item['outlier'])
 
 	s = len(x) * [1]
-	create_scatter_plot(x, y, n,  s, "outlier", save=True, fig_saving_path=dataset_name+"_outliers_scatter_plot.png")
+
+	if prediction:
+		fig_saving_path = dataset_name + "_predicted_outliers_scatter_plot.png"
+	else:
+		fig_saving_path = dataset_name+"_outliers_scatter_plot.png"
+	create_scatter_plot(x, y, n,  s, "outlier", save=True, fig_saving_path=fig_saving_path)
 
 
 def visualize_predictions(predictions, saving_path, model_name):
