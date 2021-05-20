@@ -174,7 +174,7 @@ if __name__ == '__main__':
 	parser.add_argument(
 		"--algorithm",
 		"-a",
-		help="name of clustering algorithm {kmeans|bkmeans",
+		help="name of clustering algorithm {kmeans|bkmeans}",
 		default="kmeans"
 	)
 	parser.add_argument(
