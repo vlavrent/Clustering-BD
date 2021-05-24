@@ -13,7 +13,12 @@ pip install -r requirements.txt
 ## Usage
 
 ### Run cure.py
+You should select these parameters: 
+* -d dataset path
+* -th Threshold of representative points
+* -k value for hierarchical clustering 
 ```bash
+spark-submit --master local[*] --driver-memory 8g CURE.py -d Datasets/Data1.csv -k 8 -th 6
 
 ```
 
