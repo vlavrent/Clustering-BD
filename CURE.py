@@ -17,6 +17,11 @@ from pyspark.ml.evaluation import ClusteringEvaluator
 #from utils import calculate_sse
 from tqdm import tqdm
 
+import sys
+import os
+
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 def calculate_squared_distance(cluster_centers):
     def f(features, prediction):
@@ -189,11 +194,10 @@ def new_center():
 def Cure(path,threshold,k):
     spark = SparkSession.builder.master("local[*]").appName("kmeans").getOrCreate()
 
+    #path = "Data2.csv"
+
     df = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()), \
                                                   F.col("1").cast(spark_types.FloatType()))
-
-    threshold=4
-    k=9
 
 
     #Export a sample of data
@@ -230,8 +234,8 @@ def Cure(path,threshold,k):
     #Collect representative points in main memory
     df = assembler.transform(df)
 
-    rep = pred.select("prediction","representatives").collect()
-
+    rep = pred.select("prediction","representatives")
+    rep = rep.rdd.collect()
 
     points_dist = defaultdict(list)
     for i in rep:
@@ -243,38 +247,40 @@ def Cure(path,threshold,k):
 
     #Merge clusters
     merged = pred.withColumn("merge", merge_cluster(points_dist)(F.col("prediction"),F.col("representatives"))).groupBy('merge').agg(F.collect_list('points').alias('points'))
+    merged.persist()
     merged = merged.withColumn("prediction", merge_prediction()(F.col("merge"))).withColumn("center", new_center()(F.col("points")))
     merged = merged.withColumn("new_points", F.flatten("points"))
     merged = merged.withColumn("representatives", calc_merged_representatives(threshold)(F.col('center'),F.col('new_points')))
 
 
 
-    rep2 = merged.select("prediction","representatives").collect()
-
+    rep2 = merged.select("prediction","representatives")
+    rep2 = rep2.rdd.collect()
 
     dist_points = defaultdict(list)
     for i in rep2:
         for j in i[1]:
             dist_points[i[0]].append(j)
-    print(dist_points)
+    #print(dist_points)
 
 
 
     #Predict clusters for entire dataset
     prediction_df = df.withColumn("prediction", assign_points(dist_points)(F.col("0"), F.col("1")))
-    prediction_df.show()
+    #prediction_df.show()
     #prediction_df.write.csv('predictions.csv')
+  
 
 
     #Compute execution time of CURE
     end = time.time()
     total_time = end-start
+    print(k)
     print("time:"+str(total_time))
 
 
     #Create plot CURE presictions
     #predictions_list = prediction_df.select('features', 'prediction').collect()
-    #print(predictions_list)
     #prediction_list = predictions_list.rdd.collect()
     #Clustering_plot(predictions_list,threshold,k)
 
@@ -288,8 +294,8 @@ def Cure(path,threshold,k):
     #Evaluate CURE with
     #sse = calculate_sse(prediction_df, centers)
     #print(sse)
-
-
+    merged.unpersist()
+    predictions.unpersist()
 
 
 
