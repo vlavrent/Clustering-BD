@@ -11,6 +11,7 @@ import os
 import pandas as pd
 from tqdm import tqdm
 
+
 # Example: spark-submit --master local[*] --driver-memory 10g  clustering.py -d Datasets/Data1.csv -a kmeans -s 2 -e 14
 def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	spark = SparkSession.builder. \
@@ -44,9 +45,9 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 		start = time.time()
 
 		if algorithm == 'kmeans':
-			algo = KMeans(maxIter=40)
+			algo = KMeans(maxIter=20)
 		elif algorithm == 'bkmeans':
-			algo = BisectingKMeans(maxIter=40)
+			algo = BisectingKMeans(maxIter=20)
 
 		algo.setK(k).setSeed(4) \
 			.setFeaturesCol("features") \
@@ -81,83 +82,33 @@ def simulate_kmeans(dataset_path, startk=2, endk=6, algorithm='kmeans'):
 	print('euclidean_sse_scores: ', euclidean_sse_scores)
 	print('euclidean_times: ', euclidean_times)
 
-	cosine_silhouette_scores = {}
-	cosine_sse_scores = {}
-	cosine_times = {}
-	for k in tqdm(range(startk, endk + 1)):
-		start = time.time()
-
-		if algorithm == 'kmeans':
-			algo = KMeans(maxIter=40)
-		elif algorithm == 'bkmeans':
-			algo = BisectingKMeans(maxIter=40)
-
-		algo.setK(k).setSeed(4) \
-			.setFeaturesCol("features") \
-			.setPredictionCol("prediction") \
-			.setDistanceMeasure('cosine')
-		model = algo.fit(dataset)
-
-		# Make predictions
-		predictions = model.transform(dataset)
-		predictions.persist()
-
-		# Evaluate clustering by computing Silhouette score
-		evaluator = ClusteringEvaluator().setDistanceMeasure('squaredEuclidean')
-		silhouette = evaluator.evaluate(predictions)
-		cosine_silhouette_scores[k] = silhouette
-
-		# Evaluate clustering by computing SSE
-		cluster_centers = model.clusterCenters()
-		spark.sparkContext.broadcast(cluster_centers)
-		# sse = model.summary.trainingCost
-		sse = calculate_sse(predictions, cluster_centers)
-		cosine_sse_scores[k] = sse
-		end = time.time()
-		cosine_times[k] = end - start
-
-		visualizations_saving_path = saving_path + "cosine/"
-		if not os.path.exists(visualizations_saving_path):
-			os.mkdir(visualizations_saving_path)
-		visualize_predictions(predictions, visualizations_saving_path, model_name=str(k) + "_c_" + algorithm)
-		predictions.unpersist()
-
-	print('cosine_silhouette_scores: ', cosine_silhouette_scores)
-	print('cosine_sse_scores: ', cosine_sse_scores)
-	print('cosine_times: ', cosine_times)
-
-	results_dir = {'euclidean_silhouette_scores': euclidean_silhouette_scores,
-				   'euclidean_sse_scores': euclidean_sse_scores,
-				   'euclidean_times': euclidean_times,
-				   'cosine_silhouette_scores': cosine_silhouette_scores,
-				   'cosine_sse_scores': cosine_sse_scores,
-				   'cosine_times': cosine_times}
+	results_dir = {
+		'euclidean_silhouette_scores': euclidean_silhouette_scores,
+		'euclidean_sse_scores': euclidean_sse_scores,
+		'euclidean_times': euclidean_times}
 
 	pd.DataFrame.from_dict(results_dir).to_csv(saving_path + algorithm + '_results.csv')
 
 	plt.clf()
 	plt.plot(list(euclidean_silhouette_scores.keys()), list(euclidean_silhouette_scores.values()))
-	plt.plot(list(cosine_silhouette_scores.keys()), list(cosine_silhouette_scores.values()))
 	plt.title("Optimal number of clusters based on Silhouette")
-	plt.legend(['silhouette_euclidean', 'silhouette_cosine'], loc='best')
+	plt.legend(['silhouette_euclidean'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Silhouette score")
 	plt.savefig(saving_path + algorithm + "_silhouette_scores.png")
 
 	plt.clf()
 	plt.plot(list(euclidean_sse_scores.keys()), list(euclidean_sse_scores.values()))
-	plt.plot(list(cosine_sse_scores.keys()), list(cosine_sse_scores.values()))
 	plt.title("Optimal number of clusters based on SSE")
-	plt.legend(['sse_euclidean', 'sse_cosine'], loc='best')
+	plt.legend(['sse_euclidean'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("SSE")
 	plt.savefig(saving_path + algorithm + "_SSE.png")
 
 	plt.clf()
 	plt.plot(list(euclidean_times.keys()), list(euclidean_times.values()))
-	plt.plot(list(cosine_times.keys()), list(cosine_times.values()))
 	plt.title("Time fluctuation")
-	plt.legend(['euclidean_times', 'cosine_times'], loc='best')
+	plt.legend(['euclidean_times'], loc='best')
 	plt.xlabel("Number of clusters")
 	plt.ylabel("Time(s)")
 	plt.savefig(saving_path + algorithm + "_times.png")
