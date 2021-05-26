@@ -1,9 +1,7 @@
 import argparse
 
-from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.sql import functions as F, SparkSession
-from pyspark.sql import types as spark_types
-from pyspark.ml.functions import vector_to_array
+
 
 from utils import visualize_outliers
 
@@ -16,7 +14,6 @@ def post_processing(dataset_path):
 	dataset_with_predicted_outliers = spark.read.json(dataset_path)
 
 	dataset_with_predicted_outliers.persist()
-	dataset_with_predicted_outliers.write.json("dataset_with_predicted_outliers_cure", mode="overwrite")
 	tp = dataset_with_predicted_outliers.filter((F.col("prediction") == 1.0) & (F.col("outlier") == 1.0)).count()
 	fp = dataset_with_predicted_outliers.filter((F.col("prediction") == 1.0) & (F.col("outlier") == 0.0)).count()
 	tn = dataset_with_predicted_outliers.filter((F.col("prediction") == 0.0) & (F.col("outlier") == 0.0)).count()
@@ -39,7 +36,7 @@ if __name__ == '__main__':
 		"--dataset_path",
 		"-d",
 		help="path of the dataset",
-		default="Datasets/Data1_without_outliers"
+		default="dataset_with_predicted_outliers_kde_0.5"
 	)
 	args = parser.parse_args()
 	post_processing(args.dataset_path)
