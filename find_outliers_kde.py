@@ -11,7 +11,7 @@ from CURE import calc_representatives
 
 def predict_outliers(kernel, mean_representatives_pdf):
     def f(features):
-        if kernel.score_samples(features.reshape(1, -1)) > mean_representatives_pdf:
+        if kernel.evaluate(features.reshape(1, -1)) < 0.5 * mean_representatives_pdf:
             return 1.0
         else:
             return 0.0
