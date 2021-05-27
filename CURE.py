@@ -195,7 +195,7 @@ def Cure(path,threshold,k):
     spark = SparkSession.builder.appName("cure").getOrCreate()
 
     #path = "Data2.csv"
-
+    spark.sparkContext.setLogLevel('WARN')
     df = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()), \
                                                   F.col("1").cast(spark_types.FloatType()))
 
