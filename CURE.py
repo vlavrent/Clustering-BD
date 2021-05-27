@@ -192,7 +192,7 @@ def new_center():
 
 
 def Cure(path,threshold,k):
-    spark = SparkSession.builder.master("local[*]").appName("kmeans").getOrCreate()
+    spark = SparkSession.builder.appName("cure").getOrCreate()
 
     #path = "Data2.csv"
 
@@ -268,7 +268,7 @@ def Cure(path,threshold,k):
     #Predict clusters for entire dataset
     prediction_df = df.withColumn("prediction", assign_points(dist_points)(F.col("0"), F.col("1")))
     #prediction_df.show()
-    #prediction_df.write.csv('predictions.csv')
+    prediction_df.write.csv('predictions.csv')
   
 
 
