@@ -58,7 +58,7 @@ def calc_std_dev_distance_from_center(centers):
 
 def find_outliers(path, threshold, k):
 
-    spark = SparkSession.builder.master("local[*]").appName("find_outliers_cure_based").getOrCreate()
+    spark = SparkSession.builder.appName("find_outliers_cure_based").getOrCreate()
 
     spark.sparkContext.setLogLevel('WARN')
     all_dataset = spark.read.csv(path, header=True).select(F.col("0").cast(spark_types.FloatType()),
