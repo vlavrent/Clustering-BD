@@ -1,3 +1,4 @@
+import numpy as np
 from pyspark.ml.feature import VectorAssembler
 from pyspark.sql import functions as F, SparkSession
 from pyspark.sql import types as spark_types
@@ -11,7 +12,7 @@ import os
 import pandas as pd
 from tqdm import tqdm
 from sklearn.cluster import AgglomerativeClustering
-
+from collections import defaultdict
 
 def assign_points(transform_dict):
 	def f(prediction):
@@ -71,8 +72,19 @@ def simulate_kmeans_hierarchical(dataset_path, startk=2, endk=6):
 	start = time.time()
 	for k in tqdm(range(startk, endk + 1)):
 
-		labels = AgglomerativeClustering(n_clusters=k).fit_predict(cluster_centers)
+		clustering = AgglomerativeClustering(n_clusters=k).fit(cluster_centers)
+		labels = clustering.labels_
 		transform_dict = {index: label for index, label in enumerate(labels)}
+		centroids_per_cluster = defaultdict(list)
+
+		for index, label in enumerate(labels):
+			centroids_per_cluster[label].append(cluster_centers[index])
+
+		centroids_per_cluster = {key: np.mean(centroids, axis=0) for key, centroids in centroids_per_cluster.items()}
+		centroids_per_cluster = dict(sorted(centroids_per_cluster.items()))
+
+		centroids_per_cluster = [centroid for centroid in centroids_per_cluster.values()]
+
 		agglomerative_predictions = predictions.withColumn(
 			"final_prediction", assign_points(transform_dict)(F.col("prediction")))
 
@@ -83,7 +95,7 @@ def simulate_kmeans_hierarchical(dataset_path, startk=2, endk=6):
 		euclidean_silhouette_scores[k] = silhouette
 
 		# sse = model.summary.trainingCost
-		sse = calculate_sse(agglomerative_predictions, cluster_centers, prediction_column="final_prediction")
+		sse = calculate_sse(agglomerative_predictions, centroids_per_cluster, prediction_column="final_prediction")
 		euclidean_sse_scores[k] = sse
 		end = time.time()
 		euclidean_times[k] = end - start + kmeans_time
