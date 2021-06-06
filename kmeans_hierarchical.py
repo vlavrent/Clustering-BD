@@ -69,9 +69,9 @@ def simulate_kmeans_hierarchical(dataset_path, startk=2, endk=6):
 	euclidean_sse_scores = {}
 	euclidean_times = {}
 
-	start = time.time()
-	for k in tqdm(range(startk, endk + 1)):
 
+	for k in tqdm(range(startk, endk + 1)):
+		start = time.time()
 		clustering = AgglomerativeClustering(n_clusters=k).fit(cluster_centers)
 		labels = clustering.labels_
 		transform_dict = {index: label for index, label in enumerate(labels)}
