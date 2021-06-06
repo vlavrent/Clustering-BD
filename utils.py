@@ -12,9 +12,9 @@ def calculate_squared_distance(cluster_centers):
 	return F.udf(f)
 
 
-def calculate_sse(predictions, cluster_centers):
+def calculate_sse(predictions, cluster_centers, prediction_column="prediction"):
 	return predictions.select(
-		calculate_squared_distance(cluster_centers)(F.col('features'), F.col('prediction'))
+		calculate_squared_distance(cluster_centers)(F.col('features'), F.col(prediction_column))
 			.alias('squared_distance')) \
 		.agg(F.sum('squared_distance').alias('sse')).collect()[0]['sse']
 
@@ -63,8 +63,8 @@ def visualize_outliers(dataset, dataset_name, prediction=False):
 	create_scatter_plot(x, y, n,  s, "outlier", save=True, fig_saving_path=fig_saving_path)
 
 
-def visualize_predictions(predictions, saving_path, model_name):
-	predictions_list = predictions.select('features', 'prediction').collect()
+def visualize_predictions(predictions, saving_path, model_name, prediction_column='prediction'):
+	predictions_list = predictions.select('features', prediction_column).collect()
 
 	x = []
 	y = []
@@ -72,7 +72,7 @@ def visualize_predictions(predictions, saving_path, model_name):
 	for item in predictions_list:
 		x.append(item['features'][0])
 		y.append(item['features'][1])
-		p.append(item['prediction'])
+		p.append(item[prediction_column])
 
 	fig_saving_path = saving_path + model_name + '.png'
 
