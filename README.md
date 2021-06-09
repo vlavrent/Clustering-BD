@@ -12,7 +12,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Run cure.py
+### Run cure.py (task 2,3)
 You should select these parameters: 
 * -d dataset path
 * -th Threshold of representative points
@@ -20,6 +20,14 @@ You should select these parameters:
 ```bash
 spark-submit --master local[*] --driver-memory 8g CURE.py -d Datasets/Data1.csv -k 8 -th 6
 
+```
+### Run kmeans_hierarchical.py (task 4)
+You should select these parameters: 
+* -d dataset path 
+* -s start value of k for fine tuning
+* -e end value of k for fine tuning
+```bash
+spark-submit --master local[*] --driver-memory 10g  kmeans_hierarchical.py -d Datasets/Data1.csv -s 2 -e 14
 ```
 
 ### Run clustering.py
@@ -35,7 +43,7 @@ spark-submit --master local[*] --driver-memory 8g clustering.py -d Datasets/Data
 
 ```
 
-### Run insert_outliers.py
+### Run insert_outliers.py (task 5)
 You should select these parameters: 
 * -d dataset path 
 * -s saving path 
@@ -47,7 +55,7 @@ spark-submit --master local[*] --driver-memory 8g insert_outliers.py -d Datasets
 
 ```
 
-### Run find_outliers_kde.py
+### Run find_outliers_kde.py (task 5)
 You should select these parameters: 
 * -d dataset path 
 * -th threshold of representatives points
@@ -59,7 +67,7 @@ spark-submit --master local[*] --driver-memory 8g find_outliers_kde.py -d Datase
 
 ```
 
-### Run find_outliers_cure_based.py
+### Run find_outliers_cure_based.py (task 5)
 You should select these parameters: 
 * -d dataset path 
 * -th threshold of representatives points
